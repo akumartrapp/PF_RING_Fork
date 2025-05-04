@@ -49,6 +49,9 @@ struct pcap_stat pcapStats;
 //------------------------------Ashwani Start-------------------------------
 #include <arpa/inet.h>
 #include <stdint.h>
+#include <unordered_set>
+
+using namespace std;
 
 typedef struct {
     uint32_t src_ip, dst_ip;
@@ -87,6 +90,8 @@ uint32_t hashFlowKey(const FlowKey* key) {
 	hash = hash * 31 + key->proto;
 	return hash;
 }
+
+static unordered_set<uint32_t> flowIdsSet;
 
 //------------------------------Ashwani End-------------------------------
 
@@ -352,6 +357,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
 
       int found = 0;
       uint32_t flow_id = hashFlowKey(&key);  // hashed flow ID
+      flowIdsSet.insert(flow_id);
 
       for (int i = 0; i < flow_count; i++) {
           if (compareFlowKeys(&key, &flow_keys[i])) {
@@ -380,9 +386,10 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
       // Print flow info
       for (int i = 0; i < flow_count; i++) {
           if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
-              printf("---------- Flow Metadata ----------\n");
-              printf("Flow ID        : %u\n", hashFlowKey(&flow_keys[i]));
-              printf("Protocol       : %s\n", proto2str(flow_keys[i].proto));
+              printf("\n\n---------- Flow Metadata ----------\n");
+              printf("Num Of flows detected : %u\n", hashFlowKey(&flow_keys[i]));
+              printf("Flow ID               : %u\n", hashFlowKey(&flow_keys[i]));
+              printf("Protocol              : %s\n", proto2str(flow_keys[i].proto));
 
               printf("---------- Source -----------------\n");
               printf("Source IP      : %s\n", intoa(flow_keys[i].src_ip));
@@ -391,10 +398,10 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
               printf("Bytes Sent     : %lu\n", flow_stats[i].src_bytes);
 
               printf("---------- Destination ------------\n");
-              printf("Destination IP : %s\n", intoa(flow_keys[i].dst_ip));
+              printf("Destination IP  : %s\n", intoa(flow_keys[i].dst_ip));
               printf("Destination Port: %u\n", flow_keys[i].dst_port);
-              printf("Packets Sent   : %lu\n", flow_stats[i].dst_pkts);
-              printf("Bytes Sent     : %lu\n", flow_stats[i].dst_bytes);
+              printf("Packets Sent    : %lu\n", flow_stats[i].dst_pkts);
+              printf("Bytes Sent      : %lu\n", flow_stats[i].dst_bytes);
               printf("-----------------------------------\n\n");
               break;
           }
