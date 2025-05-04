@@ -46,6 +46,41 @@ struct pcap_stat pcapStats;
 #include <netinet/ip6.h>
 #include <net/ethernet.h>     /* the L2 protocols */
 
+//------------------------------Ashwani Start-------------------------------
+#include <arpa/inet.h>
+#include <stdint.h>
+
+typedef struct {
+    uint32_t src_ip, dst_ip;
+    uint16_t src_port, dst_port;
+    uint8_t proto;
+} FlowKey;
+
+typedef struct {
+    uint64_t src_bytes, dst_bytes;
+    uint64_t src_pkts, dst_pkts;
+} FlowStats;
+
+#define MAX_FLOWS 10000
+FlowKey flow_keys[MAX_FLOWS];
+FlowStats flow_stats[MAX_FLOWS];
+int flow_count = 0;
+
+int compareFlowKeys(FlowKey* a, FlowKey* b) {
+    return (a->src_ip == b->src_ip && a->dst_ip == b->dst_ip &&
+        a->src_port == b->src_port && a->dst_port == b->dst_port &&
+        a->proto == b->proto);
+}
+
+int is_reverse_flow(FlowKey* a, FlowKey* b) {
+    return (a->src_ip == b->dst_ip && a->dst_ip == b->src_ip &&
+        a->src_port == b->dst_port && a->dst_port == b->src_port &&
+        a->proto == b->proto);
+}
+
+//------------------------------Ashwani End-------------------------------
+
+
 static struct timeval startTime;
 unsigned long long numPkts = 0, numBytes = 0;
 
@@ -279,9 +314,66 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
     }
     if(eth_type == 0x0800) {
       memcpy(&ip, p+sizeof(ehdr), sizeof(struct ip));
-      printf("[%s]", proto2str(ip.ip_p));
-      printf("[%s ", intoa(ntohl(ip.ip_src.s_addr)));
-      printf("-> %s] ", intoa(ntohl(ip.ip_dst.s_addr)));
+      // ----Ashwani Commented Start---------
+      //printf("[%s]", proto2str(ip.ip_p));
+      //printf("[%s ", intoa(ntohl(ip.ip_src.s_addr)));
+      //printf("-> %s] ", intoa(ntohl(ip.ip_dst.s_addr)));
+      // ----Ashwani Commented End
+
+      //----Ashwani New Start------
+          uint32_t src_ip = ntohl(ip.ip_src.s_addr);
+          uint32_t dst_ip = ntohl(ip.ip_dst.s_addr);
+          uint16_t src_port = 0, dst_port = 0;
+
+          const u_char* l4 = p + sizeof(struct ether_header) + (ip.ip_hl << 2);
+
+          if (ip.ip_p == IPPROTO_TCP || ip.ip_p == IPPROTO_UDP) {
+              src_port = ntohs(*(uint16_t*)l4);
+              dst_port = ntohs(*(uint16_t*)(l4 + 2));
+          }
+
+          FlowKey key = { .src_ip = src_ip, .dst_ip = dst_ip, .src_port = src_port,
+                         .dst_port = dst_port, .proto = ip.ip_p };
+
+          int found = 0;
+          for (int i = 0; i < flow_count; i++) {
+              if (compareFlowKeys(&key, &flow_keys[i])) {
+                  flow_stats[i].src_bytes += h->len;
+                  flow_stats[i].src_pkts++;
+                  found = 1;
+                  break;
+              }
+              else if (is_reverse_flow(&key, &flow_keys[i])) {
+                  flow_stats[i].dst_bytes += h->len;
+                  flow_stats[i].dst_pkts++;
+                  found = 1;
+                  break;
+              }
+          }
+
+          if (!found && flow_count < MAX_FLOWS) {
+              flow_keys[flow_count] = key;
+              flow_stats[flow_count].src_bytes = h->len;
+              flow_stats[flow_count].src_pkts = 1;
+              flow_count++;
+          }
+
+          printf("[%s]", proto2str(ip.ip_p));
+          printf("[%s:%u -> %s:%u] ",
+              intoa(src_ip), src_port, intoa(dst_ip), dst_port);
+
+          // Print current stats
+          for (int i = 0; i < flow_count; i++) {
+              if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
+                  printf("[Flow ID=%d] [Src Bytes=%llu, Pkts=%llu] [Dst Bytes=%llu, Pkts=%llu]\n",
+                      i,
+                      flow_stats[i].src_bytes, flow_stats[i].src_pkts,
+                      flow_stats[i].dst_bytes, flow_stats[i].dst_pkts);
+                  break;
+              }
+          }
+
+      //----Ashwani New End------
     } else if(eth_type == 0x86DD) {
       memcpy(&ip6, p+sizeof(ehdr), sizeof(struct ip6_hdr));
       printf("[%s ", in6toa(ip6.ip6_src));
