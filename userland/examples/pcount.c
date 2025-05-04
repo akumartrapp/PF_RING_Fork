@@ -76,6 +76,17 @@ int is_reverse_flow(FlowKey* a, FlowKey* b) {
     return (a->src_ip == b->dst_ip && a->dst_ip == b->src_ip &&
         a->src_port == b->dst_port && a->dst_port == b->src_port &&
         a->proto == b->proto);
+
+ uint32_t hashFlowKey(const FlowKey * key) {
+        uint32_t hash = 17;
+        hash = hash * 31 + key->src_ip;
+        hash = hash * 31 + key->dst_ip;
+        hash = hash * 31 + key->src_port;
+        hash = hash * 31 + key->dst_port;
+        hash = hash * 31 + key->proto;
+        return hash;
+    }
+
 }
 
 //------------------------------Ashwani End-------------------------------
@@ -321,57 +332,75 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
       // ----Ashwani Commented End
 
       //----Ashwani New Start------
-          uint32_t src_ip = ntohl(ip.ip_src.s_addr);
-          uint32_t dst_ip = ntohl(ip.ip_dst.s_addr);
-          uint16_t src_port = 0, dst_port = 0;
+      uint32_t src_ip = ntohl(ip.ip_src.s_addr);
+      uint32_t dst_ip = ntohl(ip.ip_dst.s_addr);
+      uint16_t src_port = 0, dst_port = 0;
 
-          const u_char* l4 = p + sizeof(struct ether_header) + (ip.ip_hl << 2);
+      const u_char* l4 = p + sizeof(struct ether_header) + (ip.ip_hl << 2);
 
-          if (ip.ip_p == IPPROTO_TCP || ip.ip_p == IPPROTO_UDP) {
-              src_port = ntohs(*(uint16_t*)l4);
-              dst_port = ntohs(*(uint16_t*)(l4 + 2));
+      if (ip.ip_p == IPPROTO_TCP || ip.ip_p == IPPROTO_UDP) {
+          src_port = ntohs(*(uint16_t*)l4);
+          dst_port = ntohs(*(uint16_t*)(l4 + 2));
+      }
+
+      FlowKey key = {
+        .src_ip = src_ip,
+        .dst_ip = dst_ip,
+        .src_port = src_port,
+        .dst_port = dst_port,
+        .proto = ip.ip_p
+      };
+
+      int found = 0;
+      uint32_t flow_id = hashFlowKey(&key);  // hashed flow ID
+
+      for (int i = 0; i < flow_count; i++) {
+          if (compareFlowKeys(&key, &flow_keys[i])) {
+              flow_stats[i].src_bytes += h->len;
+              flow_stats[i].src_pkts++;
+              found = 1;
+              break;
           }
-
-          FlowKey key = { .src_ip = src_ip, .dst_ip = dst_ip, .src_port = src_port,
-                         .dst_port = dst_port, .proto = ip.ip_p };
-
-          int found = 0;
-          for (int i = 0; i < flow_count; i++) {
-              if (compareFlowKeys(&key, &flow_keys[i])) {
-                  flow_stats[i].src_bytes += h->len;
-                  flow_stats[i].src_pkts++;
-                  found = 1;
-                  break;
-              }
-              else if (is_reverse_flow(&key, &flow_keys[i])) {
-                  flow_stats[i].dst_bytes += h->len;
-                  flow_stats[i].dst_pkts++;
-                  found = 1;
-                  break;
-              }
+          else if (is_reverse_flow(&key, &flow_keys[i])) {
+              flow_stats[i].dst_bytes += h->len;
+              flow_stats[i].dst_pkts++;
+              found = 1;
+              break;
           }
+      }
 
-          if (!found && flow_count < MAX_FLOWS) {
-              flow_keys[flow_count] = key;
-              flow_stats[flow_count].src_bytes = h->len;
-              flow_stats[flow_count].src_pkts = 1;
-              flow_count++;
+      if (!found && flow_count < MAX_FLOWS) {
+          flow_keys[flow_count] = key;
+          flow_stats[flow_count].src_bytes = h->len;
+          flow_stats[flow_count].src_pkts = 1;
+          flow_stats[flow_count].dst_bytes = 0;
+          flow_stats[flow_count].dst_pkts = 0;
+          flow_count++;
+      }
+
+      // Print flow info
+      for (int i = 0; i < flow_count; i++) {
+          if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
+              printf("---------- Flow Metadata ----------\n");
+              printf("Flow ID        : %u\n", hashFlowKey(&flow_keys[i]));
+              printf("Protocol       : %s\n", proto2str(flow_keys[i].proto));
+
+              printf("---------- Source -----------------\n");
+              printf("Source IP      : %s\n", intoa(flow_keys[i].src_ip));
+              printf("Source Port    : %u\n", flow_keys[i].src_port);
+              printf("Packets Sent   : %llu\n", flow_stats[i].src_pkts);
+              printf("Bytes Sent     : %llu\n", flow_stats[i].src_bytes);
+
+              printf("---------- Destination ------------\n");
+              printf("Destination IP : %s\n", intoa(flow_keys[i].dst_ip));
+              printf("Destination Port: %u\n", flow_keys[i].dst_port);
+              printf("Packets Sent   : %llu\n", flow_stats[i].dst_pkts);
+              printf("Bytes Sent     : %llu\n", flow_stats[i].dst_bytes);
+              printf("-----------------------------------\n\n");
+              break;
           }
+      }
 
-          printf("[%s]", proto2str(ip.ip_p));
-          printf("[%s:%u -> %s:%u] ",
-              intoa(src_ip), src_port, intoa(dst_ip), dst_port);
-
-          // Print current stats
-          for (int i = 0; i < flow_count; i++) {
-              if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
-                  printf("[Flow ID=%d] [Src Bytes=%llu, Pkts=%llu] [Dst Bytes=%llu, Pkts=%llu]\n",
-                      i,
-                      flow_stats[i].src_bytes, flow_stats[i].src_pkts,
-                      flow_stats[i].dst_bytes, flow_stats[i].dst_pkts);
-                  break;
-              }
-          }
 
       //----Ashwani New End------
     } else if(eth_type == 0x86DD) {
