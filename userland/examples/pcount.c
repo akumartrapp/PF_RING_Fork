@@ -73,20 +73,19 @@ int compareFlowKeys(FlowKey* a, FlowKey* b) {
 }
 
 int is_reverse_flow(FlowKey* a, FlowKey* b) {
-    return (a->src_ip == b->dst_ip && a->dst_ip == b->src_ip &&
-        a->src_port == b->dst_port && a->dst_port == b->src_port &&
-        a->proto == b->proto);
+	return (a->src_ip == b->dst_ip && a->dst_ip == b->src_ip &&
+		a->src_port == b->dst_port && a->dst_port == b->src_port &&
+		a->proto == b->proto);
+}
 
- uint32_t hashFlowKey(const FlowKey * key) {
-        uint32_t hash = 17;
-        hash = hash * 31 + key->src_ip;
-        hash = hash * 31 + key->dst_ip;
-        hash = hash * 31 + key->src_port;
-        hash = hash * 31 + key->dst_port;
-        hash = hash * 31 + key->proto;
-        return hash;
-    }
-
+uint32_t hashFlowKey(const FlowKey* key) {
+	uint32_t hash = 17;
+	hash = hash * 31 + key->src_ip;
+	hash = hash * 31 + key->dst_ip;
+	hash = hash * 31 + key->src_port;
+	hash = hash * 31 + key->dst_port;
+	hash = hash * 31 + key->proto;
+	return hash;
 }
 
 //------------------------------Ashwani End-------------------------------
@@ -388,14 +387,14 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
               printf("---------- Source -----------------\n");
               printf("Source IP      : %s\n", intoa(flow_keys[i].src_ip));
               printf("Source Port    : %u\n", flow_keys[i].src_port);
-              printf("Packets Sent   : %llu\n", flow_stats[i].src_pkts);
-              printf("Bytes Sent     : %llu\n", flow_stats[i].src_bytes);
+              printf("Packets Sent   : %lu\n", flow_stats[i].src_pkts);
+              printf("Bytes Sent     : %lu\n", flow_stats[i].src_bytes);
 
               printf("---------- Destination ------------\n");
               printf("Destination IP : %s\n", intoa(flow_keys[i].dst_ip));
               printf("Destination Port: %u\n", flow_keys[i].dst_port);
-              printf("Packets Sent   : %llu\n", flow_stats[i].dst_pkts);
-              printf("Bytes Sent     : %llu\n", flow_stats[i].dst_bytes);
+              printf("Packets Sent   : %lu\n", flow_stats[i].dst_pkts);
+              printf("Bytes Sent     : %lu\n", flow_stats[i].dst_bytes);
               printf("-----------------------------------\n\n");
               break;
           }
@@ -564,7 +563,7 @@ int main(int argc, char* argv[]) {
 
   if(!dont_strip_hw_ts) setenv("PCAP_PF_RING_STRIP_HW_TIMESTAMP", "1", 1);
 
-  printf("Capturing from %s, version is 05.03.2025.01\n", device);
+  printf("Capturing from %s, version is 05.03.2025.02\n", device);
 
   promisc = 1;
 
