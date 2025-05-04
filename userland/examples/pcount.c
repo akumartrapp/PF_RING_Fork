@@ -382,6 +382,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
       for (int i = 0; i < flow_count; i++) {
           if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
               printf("\n\n---------- Flow Metadata ----------\n");
+              printf("Flow ID Count         : %d\n", flow_count);;
               printf("Flow ID               : %u\n", hashFlowKey(&flow_keys[i]));
               printf("Protocol              : %s\n", proto2str(flow_keys[i].proto));
 
