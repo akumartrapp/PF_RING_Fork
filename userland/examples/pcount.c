@@ -535,7 +535,7 @@ int main(int argc, char* argv[]) {
 
   if(!dont_strip_hw_ts) setenv("PCAP_PF_RING_STRIP_HW_TIMESTAMP", "1", 1);
 
-  printf("Capturing from %s\n", device);
+  printf("Capturing from %s, version is 05.03.2025.01\n", device);
 
   promisc = 1;
 
