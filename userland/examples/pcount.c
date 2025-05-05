@@ -109,7 +109,7 @@ void init_ndpi() {
     NDPI_PROTOCOL_BITMASK all;
     NDPI_BITMASK_SET_ALL(all);
     ndpi_set_protocol_detection_bitmask2(ndpi_struct, &all);
-    ndpi_set_bin(ndpi_struct, 1600);  // Typical MTU
+    //ndpi_set_bin(ndpi_struct, 1600);  // Typical MTU
     ndpi_finalize_initialization(ndpi_struct);
 }
 
