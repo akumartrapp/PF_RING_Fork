@@ -7,8 +7,6 @@
 # the version with PF_RING aware functionalities.
 #
 
-
-
 #
 # PF_RING
 #
@@ -24,10 +22,16 @@ PCAPDIR    = ../libpcap
 LIBPCAP    = ${PCAPDIR}/libpcap.a  ${EXTRA_LIBS}
 
 #
+# nDPI
+#
+NDPI_INC   = -I/usr/include/ndpi
+NDPI_LIBS  = -lndpi
+
+#
 # Search directories
 #
 PFRING_KERNEL=../../kernel
-INCLUDE    = -I${PFRING_KERNEL} -I${PFRINGDIR} -I${PCAPDIR} -Ithird-party `../lib/pfring_config --include`
+INCLUDE    = -I${PFRING_KERNEL} -I${PFRINGDIR} -I${PCAPDIR} -Ithird-party ${NDPI_INC} `../lib/pfring_config --include`
 
 #
 # C compiler and flags
@@ -43,11 +47,10 @@ CFLAGS     = @CFLAGS@ ${O_FLAG} ${WFLAGS} ${INCLUDE} @HAVE_BPF@ @HAVE_REDIS@ @HA
 #
 # User and System libraries
 #
-LIBS       = ${LIBPCAP} ${LIBPFRING} ${LIBPCAP} ${LIBPFRING} `../lib/pfring_config --libs` `../libpcap/pcap-config --additional-libs --static` -lpthread @SYSLIBS@ @REDIS_LIB@ -lrt
+LIBS       = ${LIBPCAP} ${LIBPFRING} ${LIBPCAP} ${LIBPFRING} ${NDPI_LIBS} `../lib/pfring_config --libs` `../libpcap/pcap-config --additional-libs --static` -lpthread @SYSLIBS@ @REDIS_LIB@ -lrt
 
 # How to make an object file
 %.o: %.c pfutils.c
-#	@echo "=*= making object $@ =*="
 	${CC} ${CFLAGS} -c $< -o $@
 
 #
