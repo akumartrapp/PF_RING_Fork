@@ -96,17 +96,17 @@ uint32_t hashFlowKey(const FlowKey* key) {
 
 void cleanup_ndpi() {
     if (ndpi_struct != NULL)
-        ndpi_exit_detection_module(ndpi_struct, NULL);
+        ndpi_exit_detection_module(ndpi_struct);
 }
 
 void init_ndpi() {
-    ndpi_struct = ndpi_init_detection_module(NDPI_STRUCT_VERSION, NULL, NULL);
+    ndpi_struct = ndpi_init_detection_module( NULL);
     if (ndpi_struct == NULL) {
         fprintf(stderr, "ERROR: Could not initialize nDPI detection module\n");
         exit(EXIT_FAILURE);
     }
 
-    ndpi_set_protocol_detection_bitmask2(ndpi_struct, &ndpi_struct->detection_bitmask, NDPI_PROTOCOL_BITMASK_ALL);
+    ndpi_set_protocol_detection_bitmask2(ndpi_struct, NDPI_PROTOCOL_BITMASK_ALL);
     ndpi_set_mtu(ndpi_struct, 1600);  // Typical MTU
     ndpi_finalize_initialization(ndpi_struct);
 }
@@ -399,7 +399,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
           flow_stats[flow_count].src_pkts = 1;
           flow_stats[flow_count].dst_bytes = 0;
           flow_stats[flow_count].dst_pkts = 0;
-          flow_stats[flow_count].ndpi_flow = ndpi_flow_malloc();
+          flow_stats[flow_count].ndpi_flow = ndpi_flow_malloc(1000);
           flow_stats[flow_count].detected_protocol = NDPI_PROTOCOL_UNKNOWN;
           flow_count++;
       }
@@ -414,21 +414,21 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
       }
 
       if (flow_idx >= 0) {
-          struct ndpi_proto proto = ndpi_detection_process_packet(ndpi_struct,
-              flow_stats[flow_idx].ndpi_flow,
-              p + sizeof(struct ether_header),
-              h->caplen - sizeof(struct ether_header),
-              h->ts.tv_sec);
+          //struct ndpi_proto proto = ndpi_detection_process_packet(ndpi_struct,
+          //    flow_stats[flow_idx].ndpi_flow,
+          //    p + sizeof(struct ether_header),
+          //    h->caplen - sizeof(struct ether_header),
+          //    h->ts.tv_sec);
 
-          if (proto.master_protocol != NDPI_PROTOCOL_UNKNOWN)
-              flow_stats[flow_idx].detected_protocol = proto.master_protocol;
+          //if (proto.master_protocol != NDPI_PROTOCOL_UNKNOWN)
+          //    flow_stats[flow_idx].detected_protocol = proto.master_protocol;
       }
 
       // Print flow info
       for (int i = 0; i < flow_count; i++) {
           if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
               printf("\n\n---------- Flow Metadata ----------\n");
-              printf("Application Proto     : %s\n",ndpi_protocol2name(ndpi_struct, flow_stats[i].detected_protocol));
+              //printf("Application Proto     : %s\n",ndpi_protocol2name(ndpi_struct, flow_stats[i].detected_protocol));
               printf("Flow ID Count         : %d\n", flow_count);;
               printf("Flow ID               : %u\n", hashFlowKey(&flow_keys[i]));
               printf("Protocol              : %s\n", proto2str(flow_keys[i].proto));
