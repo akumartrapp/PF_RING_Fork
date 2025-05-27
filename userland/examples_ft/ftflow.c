@@ -233,6 +233,8 @@ void print_time() {
 
 /* This callback is called when a flow expires */
 void processFlow(pfring_ft_flow *flow, void *user){
+  // Ashwani
+    return;
   pfring_ft_flow_key *k;
   pfring_ft_flow_value *v;
   char buf1[64], buf2[64], buf3[32], buf4[32], buf5[32];
@@ -346,6 +348,7 @@ void l7Detected(const u_char *data, pfring_ft_packet_metadata *metadata, pfring_
 #endif
 
 /* ******************************** */
+
 
 void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char *user_bytes) {
   pfring_ft_pcap_pkthdr *hdr = (pfring_ft_pcap_pkthdr *) h;
