@@ -49,8 +49,8 @@ struct pcap_stat pcapStats;
 //------------------------------Ashwani Start-------------------------------
 #include <arpa/inet.h>
 #include <stdint.h>
-#include <ndpi_api.h>
-#include <ndpi_main.h>
+//#include <ndpi_api.h>
+//#include <ndpi_main.h>
 
 struct ndpi_detection_module_struct* ndpi_struct;
 
