@@ -94,6 +94,7 @@ void *time_pulse_thread(void *data) {
 /* ************************************ */
 
 void print_stats() {
+  printf("\nprint_stats\n");
   pfring_stat stat;
   pfring_ft_stats *fstat;
   static struct timeval start_time = { 0 };
@@ -386,6 +387,8 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
         printf("Total packets captured: %lu\n", packet_count);
         printf("Total bytes captured: %lu\n", total_bytes);
         printf("Average speed: %.3f Gbps\n", gbps);
+        print_stats();
+
 
         // Ask to continue
         printf("Do you want to continue measuring? (y/n): ");
