@@ -123,7 +123,7 @@ void print_stats() {
       bytes_diff = n_bytes - last_bytes;
       bytes_diff /= (1000*1000*1000)/8;
 
-      snprintf(buf, sizeof(buf),
+      printf(
              "Duration:   %s\n"
              "ActFlows:   %ju\n"
              "TotFlows:   %ju\n"
@@ -414,7 +414,7 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
 
     printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
     printf("\n");
-    print_stats();
+    
     return;
   pfring_ft_pcap_pkthdr *hdr = (pfring_ft_pcap_pkthdr *) h;
   pfring_ft_ext_pkthdr ext_hdr = { 0 };
