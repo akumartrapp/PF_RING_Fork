@@ -46,76 +46,6 @@ struct pcap_stat pcapStats;
 #include <netinet/ip6.h>
 #include <net/ethernet.h>     /* the L2 protocols */
 
-//------------------------------Ashwani Start-------------------------------
-#include <arpa/inet.h>
-#include <stdint.h>
-//#include <ndpi_api.h>
-//#include <ndpi_main.h>
-
-struct ndpi_detection_module_struct* ndpi_struct;
-
-typedef struct {
-    uint32_t src_ip, dst_ip;
-    uint16_t src_port, dst_port;
-    uint8_t proto;
-} FlowKey;
-
-typedef struct {
-    uint64_t src_bytes, dst_bytes;
-    uint64_t src_pkts, dst_pkts;
-    struct ndpi_flow_struct* ndpi_flow;
-    u_int16_t detected_protocol;
-} FlowStats;
-
-#define MAX_FLOWS 10000
-FlowKey flow_keys[MAX_FLOWS];
-FlowStats flow_stats[MAX_FLOWS];
-int flow_count = 0;
-
-int compareFlowKeys(FlowKey* a, FlowKey* b) {
-    return (a->src_ip == b->src_ip && a->dst_ip == b->dst_ip &&
-        a->src_port == b->src_port && a->dst_port == b->dst_port &&
-        a->proto == b->proto);
-}
-
-int is_reverse_flow(FlowKey* a, FlowKey* b) {
-	return (a->src_ip == b->dst_ip && a->dst_ip == b->src_ip &&
-		a->src_port == b->dst_port && a->dst_port == b->src_port &&
-		a->proto == b->proto);
-}
-
-uint32_t hashFlowKey(const FlowKey* key) {
-	uint32_t hash = 17;
-	hash = hash * 31 + key->src_ip;
-	hash = hash * 31 + key->dst_ip;
-	hash = hash * 31 + key->src_port;
-	hash = hash * 31 + key->dst_port;
-	hash = hash * 31 + key->proto;
-	return hash;
-}
-
-void cleanup_ndpi() {
-    if (ndpi_struct != NULL)
-        ndpi_exit_detection_module(ndpi_struct);
-}
-
-void init_ndpi() {
-    ndpi_struct = ndpi_init_detection_module( NULL);
-    if (ndpi_struct == NULL) {
-        fprintf(stderr, "ERROR: Could not initialize nDPI detection module\n");
-        exit(EXIT_FAILURE);
-    }
-
-    NDPI_PROTOCOL_BITMASK all;
-    NDPI_BITMASK_SET_ALL(all);
-    ndpi_set_protocol_detection_bitmask2(ndpi_struct, &all);
-    //ndpi_set_bin(ndpi_struct, 1600);  // Typical MTU
-    ndpi_finalize_initialization(ndpi_struct);
-}
-
-//------------------------------Ashwani End-------------------------------
-
-
 static struct timeval startTime;
 unsigned long long numPkts = 0, numBytes = 0;
 
@@ -321,8 +251,8 @@ char* proto2str(u_short proto) {
 
 static int32_t thiszone;
 
-void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char *p) 
-{
+void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char *p) {
+
     static uint64_t total_bytes = 0;
     static uint64_t packet_count = 0;
     static time_t start_time = 0;
@@ -342,7 +272,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         printf("Started measuring...\n");
     }
 
-    total_bytes += h->caplen;
+    total_bytes += header->caplen;
     packet_count++;
 
     double elapsed = difftime(now, start_time);
@@ -408,121 +338,19 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
     }
     if(eth_type == 0x0800) {
       memcpy(&ip, p+sizeof(ehdr), sizeof(struct ip));
-      // ----Ashwani Commented Start---------
-      //printf("[%s]", proto2str(ip.ip_p));
-      //printf("[%s ", intoa(ntohl(ip.ip_src.s_addr)));
-      //printf("-> %s] ", intoa(ntohl(ip.ip_dst.s_addr)));
-      // ----Ashwani Commented End
-
-      //----Ashwani New Start------
-      uint32_t src_ip = ntohl(ip.ip_src.s_addr);
-      uint32_t dst_ip = ntohl(ip.ip_dst.s_addr);
-      uint16_t src_port = 0, dst_port = 0;
-
-      const u_char* l4 = p + sizeof(struct ether_header) + (ip.ip_hl << 2);
-
-      if (ip.ip_p == IPPROTO_TCP || ip.ip_p == IPPROTO_UDP) {
-          src_port = ntohs(*(uint16_t*)l4);
-          dst_port = ntohs(*(uint16_t*)(l4 + 2));
-      }
-
-      FlowKey key = {
-        .src_ip = src_ip,
-        .dst_ip = dst_ip,
-        .src_port = src_port,
-        .dst_port = dst_port,
-        .proto = ip.ip_p
-      };
-
-      int found = 0;
-      uint32_t flow_id = hashFlowKey(&key);  // hashed flow ID
-
-      for (int i = 0; i < flow_count; i++) 
-      {
-          if (compareFlowKeys(&key, &flow_keys[i])) {
-              flow_stats[i].src_bytes += h->len;
-              flow_stats[i].src_pkts++;
-              found = 1;
-              break;
-          }
-          else if (is_reverse_flow(&key, &flow_keys[i])) {
-              flow_stats[i].dst_bytes += h->len;
-              flow_stats[i].dst_pkts++;
-              found = 1;
-              break;
-          }
-      }
-
-      if (!found && flow_count < MAX_FLOWS) {
-          flow_keys[flow_count] = key;
-          flow_stats[flow_count].src_bytes = h->len;
-          flow_stats[flow_count].src_pkts = 1;
-          flow_stats[flow_count].dst_bytes = 0;
-          flow_stats[flow_count].dst_pkts = 0;
-          flow_stats[flow_count].ndpi_flow = ndpi_flow_malloc(1000);
-          flow_stats[flow_count].detected_protocol = NDPI_PROTOCOL_UNKNOWN;
-          flow_count++;
-      }
-
-      // Run nDPI detection for this packet
-      int flow_idx = -1;
-      for (int i = 0; i < flow_count; i++) {
-          if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
-              flow_idx = i;
-              break;
-          }
-      }
-
-      if (flow_idx >= 0) {
-          //struct ndpi_proto proto = ndpi_detection_process_packet(ndpi_struct,
-          //    flow_stats[flow_idx].ndpi_flow,
-          //    p + sizeof(struct ether_header),
-          //    h->caplen - sizeof(struct ether_header),
-          //    h->ts.tv_sec);
-
-          //if (proto.master_protocol != NDPI_PROTOCOL_UNKNOWN)
-          //    flow_stats[flow_idx].detected_protocol = proto.master_protocol;
-      }
-
-      // Print flow info
-      for (int i = 0; i < flow_count; i++) {
-          if (compareFlowKeys(&key, &flow_keys[i]) || is_reverse_flow(&key, &flow_keys[i])) {
-              printf("\n\n---------- Flow Metadata ----------\n");
-              //printf("Application Proto     : %s\n",ndpi_protocol2name(ndpi_struct, flow_stats[i].detected_protocol));
-              printf("Flow ID Count         : %d\n", flow_count);;
-              printf("Flow ID               : %u\n", hashFlowKey(&flow_keys[i]));
-              printf("Protocol              : %s\n", proto2str(flow_keys[i].proto));
-
-              printf("---------- Source -----------------\n");
-              printf("Source IP      : %s\n", intoa(flow_keys[i].src_ip));
-              printf("Source Port    : %u\n", flow_keys[i].src_port);
-              printf("Packets Sent   : %lu\n", flow_stats[i].src_pkts);
-              printf("Bytes Sent     : %lu\n", flow_stats[i].src_bytes);
-
-              printf("---------- Destination ------------\n");
-              printf("Destination IP  : %s\n", intoa(flow_keys[i].dst_ip));
-              printf("Destination Port: %u\n", flow_keys[i].dst_port);
-              printf("Packets Sent    : %lu\n", flow_stats[i].dst_pkts);
-              printf("Bytes Sent      : %lu\n", flow_stats[i].dst_bytes);
-              printf("-----------------------------------\n\n");
-              break;
-          }
-      }
-
-
-      //----Ashwani New End------
+      printf("[%s]", proto2str(ip.ip_p));
+      printf("[%s ", intoa(ntohl(ip.ip_src.s_addr)));
+      printf("-> %s] ", intoa(ntohl(ip.ip_dst.s_addr)));
     } else if(eth_type == 0x86DD) {
       memcpy(&ip6, p+sizeof(ehdr), sizeof(struct ip6_hdr));
-      // Ashwani
-      //printf("[%s ", in6toa(ip6.ip6_src));
-      //printf("-> %s] ", in6toa(ip6.ip6_dst));
+      printf("[%s ", in6toa(ip6.ip6_src));
+      printf("-> %s] ", in6toa(ip6.ip6_dst));
     } else if(eth_type == 0x0806)
       printf("[ARP]");
     else
       printf("[eth_type=0x%04X]", eth_type);
 
-    // ----Ashwani--comment out this line
-    //printf("[caplen=%u][len=%u]\n", h->caplen, h->len);
+    printf("[caplen=%u][len=%u]\n", h->caplen, h->len);
   }
 
   if(numPkts == 0) gettimeofday(&startTime, NULL);
@@ -672,18 +500,13 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  init_ndpi();
-
-
   if(!dont_strip_hw_ts) setenv("PCAP_PF_RING_STRIP_HW_TIMESTAMP", "1", 1);
 
-  printf("Capturing from %s, version is 05.04.2025.01\n", device);
+  printf("Capturing from %s\n", device);
 
   promisc = 1;
 
-  // Ashwani Original
-  //pd = pcap_open_live(device, snaplen, promisc, 1000 /* ms */, errbuf);
-  pd =  pcap_open_live(device, 65535, 1, 1, errbuf);
+  pd = pcap_open_live(device, snaplen, promisc, 1000 /* ms */, errbuf);
 
   if (pd == NULL) {
     printf("pcap_open_live: %s\n", errbuf);
@@ -723,7 +546,6 @@ int main(int argc, char* argv[]) {
 
   print_stats();
 
-  cleanup_ndpi();
   pcap_close(pd);
 
   return(0);
