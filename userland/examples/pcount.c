@@ -288,27 +288,35 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         printf("Total bytes captured: %lu\n", total_bytes);
         printf("Average speed: %.3f Gbps\n", gbps);
         print_stats();
-        // Ask to continue
-        printf("Do you want to continue measuring? (y/n): ");
-        fflush(stdout);
 
-        int c = getchar();
-        while (c != '\n' && getchar() != '\n')
-            ; // Clear input
+        start_time = time(NULL);
+        total_bytes = 0;
+        packet_count = 0;
+        printf("Restarted measuring...\n");
 
-        if (c == 'y' || c == 'Y')
-        {
-            start_time = time(NULL);
-            total_bytes = 0;
-            packet_count = 0;
-            printf("Restarted measuring...\n");
-        }
-        else
-        {
-            printf("Stopping measurements.\n");
-            measuring = -1;
-        }
+        //// Ask to continue
+        //printf("Do you want to continue measuring? (y/n): ");
+        //fflush(stdout);
+
+        //int c = getchar();
+        //while (c != '\n' && getchar() != '\n')
+        //    ; // Clear input
+
+        //if (c == 'y' || c == 'Y')
+        //{
+        //    start_time = time(NULL);
+        //    total_bytes = 0;
+        //    packet_count = 0;
+        //    printf("Restarted measuring...\n");
+        //}
+        //else
+        //{
+        //    printf("Stopping measurements.\n");
+        //    measuring = -1;
+        //}
     }
+
+    return;
 
     //printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
     //printf("\n");
