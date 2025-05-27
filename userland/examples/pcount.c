@@ -272,7 +272,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         printf("Started measuring...\n");
     }
 
-    total_bytes += header->caplen;
+    total_bytes += h->caplen;
     packet_count++;
 
     double elapsed = difftime(now, start_time);
