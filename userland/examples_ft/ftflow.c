@@ -91,6 +91,19 @@ void *time_pulse_thread(void *data) {
   return NULL;
 }
 
+void printstats() {
+    pfring_stat stat;
+    if (pfring_stats(pd, &stat) >= 0) {
+        printf(
+            "Received:    %lu\n"
+            "Dropped:    %lu\n"
+            "Shunt:      %lu\n",
+            (long unsigned int) stat.recv,
+            (long unsigned int) stat.drop,
+            (long unsigned int) stat.shunt);,
+    }
+}
+
 /* ************************************ */
 
 void print_stats() {
@@ -387,7 +400,7 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
         printf("Total packets captured: %lu\n", packet_count);
         printf("Total bytes captured: %lu\n", total_bytes);
         printf("Average speed: %.3f Gbps\n", gbps);
-        print_stats();
+        printstats();
 
 
         // Ask to continue
