@@ -309,7 +309,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         }
     }
 
-    printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
+    printf("Packet Sents = %" PRIu64 ", Total bytes received: %\n" PRIu64, packet_count, total_bytes);
 
   if(verbose) {
     struct ether_header ehdr;
