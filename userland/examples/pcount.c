@@ -287,7 +287,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         printf("Total packets captured: %lu\n", packet_count);
         printf("Total bytes captured: %lu\n", total_bytes);
         printf("Average speed: %.3f Gbps\n", gbps);
-
+        print_stats();
         // Ask to continue
         printf("Do you want to continue measuring? (y/n): ");
         fflush(stdout);
@@ -310,8 +310,8 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         }
     }
 
-    printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
-    printf("\n");
+    //printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
+    //printf("\n");
 
   if(verbose) {
     struct ether_header ehdr;
