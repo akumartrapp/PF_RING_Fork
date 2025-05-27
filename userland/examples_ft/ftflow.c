@@ -373,7 +373,7 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
         printf("Started measuring...\n");
     }
 
-    total_bytes += h->caplen;
+    total_bytes += h->len + 24;
     packet_count++;
 
     double elapsed = difftime(now, start_time);
