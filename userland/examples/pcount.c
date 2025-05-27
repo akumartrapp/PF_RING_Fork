@@ -141,7 +141,8 @@ void sigproc(int sig) {
 /* ******************************** */
 
 void my_sigalarm(int sig) {
-  print_stats();
+  // Ashwani 
+  //print_stats();
   alarm(ALARM_SLEEP);
   signal(SIGALRM, my_sigalarm);
 }
@@ -533,10 +534,11 @@ int main(int argc, char* argv[]) {
   signal(SIGINT, sigproc);
   signal(SIGTERM, sigproc);
 
-  if(!verbose) {
-    signal(SIGALRM, my_sigalarm);
-    alarm(ALARM_SLEEP);
-  }
+  // Ashwani
+  //if(!verbose) {
+  //  signal(SIGALRM, my_sigalarm);
+  //  alarm(ALARM_SLEEP);
+  //}
 
   pcap_set_watermark(pd, 128);
 
