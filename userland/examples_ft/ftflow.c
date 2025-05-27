@@ -402,31 +402,35 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
         printf("Average speed: %.3f Gbps\n", gbps);
         printstats();
 
+        start_time = time(NULL);
+        total_bytes = 0;
+        packet_count = 0;
+        printf("Restarted measuring...\n");
 
-        // Ask to continue
-        printf("Do you want to continue measuring? (y/n): ");
-        fflush(stdout);
 
-        int c = getchar();
-        while (c != '\n' && getchar() != '\n')
-            ; // Clear input
+        //printf("Do you want to continue measuring? (y/n): ");
+        //fflush(stdout);
 
-        if (c == 'y' || c == 'Y')
-        {
-            start_time = time(NULL);
-            total_bytes = 0;
-            packet_count = 0;
-            printf("Restarted measuring...\n");
-        }
-        else
-        {
-            printf("Stopping measurements.\n");
-            measuring = -1;
-        }
+        //int c = getchar();
+        //while (c != '\n' && getchar() != '\n')
+        //    ; // Clear input
+
+        //if (c == 'y' || c == 'Y')
+        //{
+        //    start_time = time(NULL);
+        //    total_bytes = 0;
+        //    packet_count = 0;
+        //    printf("Restarted measuring...\n");
+        //}
+        //else
+        //{
+        //    printf("Stopping measurements.\n");
+        //    measuring = -1;
+        //}
     }
 
-    printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
-    printf("\n");
+    //printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
+    //printf("\n");
     
     return;
   pfring_ft_pcap_pkthdr *hdr = (pfring_ft_pcap_pkthdr *) h;
