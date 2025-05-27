@@ -81,6 +81,29 @@ long delta_time (struct timeval * now,
 }
 
 /* ******************************** */
+void printstats()
+{
+    struct pcap_stat pcapStat;
+
+
+    if (pcap_stats(pd, &pcapStat) >= 0)
+    {
+        printf(
+            "=========================\n"
+            "Absolute Stats: [%u pkts rcvd][%u pkts dropped (%u if drops)]\n"
+            "Total Pkts=%u/Dropped=%.1f %%\n",
+            pcapStat.ps_recv,
+            pcapStat.ps_drop,
+            pcapStat.ps_ifdrop,
+            pcapStat.ps_recv - pcapStat.ps_drop,
+            pcapStat.ps_recv == 0 ? 0 : (double)(pcapStat.ps_drop * 100) / (double)pcapStat.ps_recv);
+
+
+        fprintf(stderr, "=========================\n");
+    }
+
+
+}
 
 void print_stats() {
   struct pcap_stat pcapStat;
@@ -287,7 +310,7 @@ void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char 
         printf("Total packets captured: %lu\n", packet_count);
         printf("Total bytes captured: %lu\n", total_bytes);
         printf("Average speed: %.3f Gbps\n", gbps);
-        print_stats();
+        printstats();
 
         start_time = time(NULL);
         total_bytes = 0;
