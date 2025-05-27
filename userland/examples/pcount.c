@@ -323,6 +323,64 @@ static int32_t thiszone;
 
 void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char *p) 
 {
+    static uint64_t total_bytes = 0;
+    static uint64_t packet_count = 0;
+    static time_t start_time = 0;
+    static int measuring = 0; // 0 = not started, 1 = measuring, -1 = stop forever
+
+    if (measuring == -1)
+        return; // User chose to stop
+
+    time_t now = time(NULL);
+
+    if (measuring == 0)
+    {
+        start_time = now;
+        total_bytes = 0;
+        packet_count = 0;
+        measuring = 1;
+        printf("Started measuring...\n");
+    }
+
+    total_bytes += h->caplen;
+    packet_count++;
+
+    double elapsed = difftime(now, start_time);
+    if (elapsed >= 60.0)
+    {
+        // Calculate average speed in Gbps
+        double bits = total_bytes * 8.0;
+        double gbps = bits / (elapsed * 1e9); // Gbps = bits / seconds / 1e9
+
+        printf("\n=== 60 Second Report ===\n");
+        printf("Total packets captured: %lu\n", packet_count);
+        printf("Total bytes captured: %lu\n", total_bytes);
+        printf("Average speed: %.3f Gbps\n", gbps);
+
+        // Ask to continue
+        printf("Do you want to continue measuring? (y/n): ");
+        fflush(stdout);
+
+        int c = getchar();
+        while (c != '\n' && getchar() != '\n')
+            ; // Clear input
+
+        if (c == 'y' || c == 'Y')
+        {
+            start_time = time(NULL);
+            total_bytes = 0;
+            packet_count = 0;
+            printf("Restarted measuring...\n");
+        }
+        else
+        {
+            printf("Stopping measurements.\n");
+            measuring = -1;
+        }
+    }
+
+    printf("Packet Sents = %" PRIu64 ", Total bytes received: %" PRIu64, packet_count, total_bytes);
+
   if(verbose) {
     struct ether_header ehdr;
     u_short eth_type, vlan_id;
@@ -623,7 +681,9 @@ int main(int argc, char* argv[]) {
 
   promisc = 1;
 
-  pd = pcap_open_live(device, snaplen, promisc, 1000 /* ms */, errbuf);
+  // Ashwani Original
+  //pd = pcap_open_live(device, snaplen, promisc, 1000 /* ms */, errbuf);
+  pd =  pcap_open_live(device, 65535, 1, 1, errbuf);
 
   if (pd == NULL) {
     printf("pcap_open_live: %s\n", errbuf);
