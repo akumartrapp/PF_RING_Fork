@@ -100,7 +100,7 @@ void printstats() {
             "Shunt:      %lu\n",
             (long unsigned int) stat.recv,
             (long unsigned int) stat.drop,
-            (long unsigned int) stat.shunt);,
+            (long unsigned int) stat.shunt);
     }
 }
 
