@@ -576,10 +576,17 @@ int main(int argc, char* argv[]) {
 
   pcap_set_watermark(pd, 128);
 
+  printf("stage 1\n");
   if (use_pcap_loop)
-    pcap_loop(pd, -1, processPacket, NULL);
+  {
+      printf("use_pcap_loop 1\n");
+      pcap_loop(pd, -1, processPacket, NULL);
+  }
   else
-    capturePackets();
+  {
+      printf("capturePackets 1\n");
+      capturePackets();
+  }
 
   print_stats();
 
