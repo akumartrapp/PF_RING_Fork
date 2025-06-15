@@ -372,6 +372,7 @@ void process_packet(const struct pfring_pkthdr *h, const u_char *p, const u_char
     static time_t start_time = 0;
     static int measuring = 0; // 0 = not started, 1 = measuring, -1 = stop forever
 
+    printf("process_packet");
     if (measuring == -1)
         return; // User chose to stop
 
