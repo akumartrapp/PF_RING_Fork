@@ -458,7 +458,7 @@ int main(int argc, char* argv[]) {
   u_int8_t dont_strip_hw_ts = 0;
   int direction = PCAP_D_INOUT;
 
-  printf("main\n")
+  printf("main\n");
 #if 0
   struct sched_param schedparam;
 
