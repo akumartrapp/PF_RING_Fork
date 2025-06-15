@@ -277,6 +277,7 @@ static int32_t thiszone;
 
 void processPacket(u_char *_deviceId, const struct pcap_pkthdr *h, const u_char *p) {
 
+    printf("processPacket");
     static uint64_t total_bytes = 0;
     static uint64_t packet_count = 0;
     static time_t start_time = 0;
@@ -405,6 +406,7 @@ void capturePackets() {
   struct pcap_pkthdr *h;
   int rc;
 
+  printf("capturePackets");
   while (!do_shutdown) {
     rc = pcap_next_ex(pd, &h, (const u_char **) &pkt);
     if (rc > 0) {
@@ -456,6 +458,7 @@ int main(int argc, char* argv[]) {
   u_int8_t dont_strip_hw_ts = 0;
   int direction = PCAP_D_INOUT;
 
+  printf("main\n")
 #if 0
   struct sched_param schedparam;
 
